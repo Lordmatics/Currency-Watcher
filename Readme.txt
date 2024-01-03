@@ -15,8 +15,9 @@ Welcome to CurrencyWatcher Help Info,
    //cw show - Makes the bar visible,
    //cw hide - Makes the bar invisible,
    //cw refresh - Forces a UI Update,
-   //cw toggledebug - Will output packet info to help identify if all cases are accounted for. Bottom Left goes red in debug mode.,
-   //cw help - Brings this menu back.,
+   //cw toggledebug - Will output packet info to help identify if all cases are accounted for. Bottom Left goes red in debug mode,
+   //cw cycleui - this will filter the bar to only show relevant currency information relating to that category,
+   //cw help - Brings this menu back,
    
 
 What does the addon do?

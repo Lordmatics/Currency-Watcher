@@ -10,7 +10,7 @@ _addon.author = "Lordmatics"
 _addon.version = "1.1"
 _addon.commands = {"CurrencyWatcher", "cw", "cwatcher"}
 
----------- DEFINE VARIALES ----------------
+---------- DEFINE VARIABLES ----------------
 
 DEBUG = false
 
@@ -109,33 +109,67 @@ local packetsToRefreshUI = T{
 	-- I think 79 for Data Download 2 might be relevant
 }
 
+-- Ensure these structures are in sync.
+m_categoryIndex = 7 -- "All"
+m_categories =
+T{
+	"Mythic", -- 1
+	"Aeonic", -- 2
+	"Sparks",
+	"Adoulin",
+	"Ambuscade",
+	"Oddysey",
+	"All" -- Must be last.
+}
+
 	-- see fields.lua to get the exact names
 	-- Note, when i learn how to use settings.xml properly.
 	-- Add support to customise this further.
-CurrencyResults = {
-	["Deeds"] = 0,
-
-	["Nyzul Tokens"] = 0,
-	["Zeni"] = 0,
-	["Jettons"] = 0,
-	["Therion Ichor"] = 0,
-
-	["Sparks of Eminence"] = 0,
-	["Unity Accolades"] = 0,
-
-	["Bayld"] = 0,
-	["Coalition Imprimaturs"] = 0,
-
-	["Escha Beads"] = 0,
-
-	["Hallmarks"] = 0,
-	["Total Hallmarks"] = 0,
-	["Badges of Gallantry"] = 0,
-
-	["Domain Points"] = 0,
-
-	["Mog Segments"] = 0,
-	["Gallimaufry"] = 0,
+CurrencyResultsCategorised = T{
+	["Mythic"] =
+	{
+		Name = "Mythic",
+		["Nyzul Tokens"] = 0,
+		["Zeni"] = 0,
+		["Jettons"] = 0,
+		["Therion Ichor"] = 0,
+	},
+	["Aeonic"] = 
+	{
+		Name = "Aeonic",
+		["Escha Beads"] = 0,
+		["Domain Points"] = 0,
+	},
+	["Sparks"] =
+	{
+		Name = "Sparks",
+		["Deeds"] = 0,
+		["Sparks of Eminence"] = 0,
+		["Unity Accolades"] = 0,
+	},
+	["Adoulin"] =
+	{
+		Name = "Adoulin",
+		["Bayld"] = 0,
+		["Coalition Imprimaturs"] = 0,
+	},
+	["Ambuscade"] =
+	{
+		Name = "Ambuscade",
+		["Hallmarks"] = 0,
+		["Total Hallmarks"] = 0,
+		["Badges of Gallantry"] = 0,
+	},
+	["Oddysey"] =
+	{
+		Name = "Oddysey",
+		["Mog Segments"] = 0,
+		["Gallimaufry"] = 0,
+	},
+	["All"] =
+	{
+		Name = "All",
+	}
 }
 
 local player_name = windower.ffxi.get_info().logged_in and windower.ffxi.get_player().name
@@ -405,7 +439,17 @@ function OnCommandRecieved(command, ...)
 		m_bUIEnabled = true
 	elseif command == "hide" then		
 		box:hide()
-		m_bUIEnabled = false		
+		m_bUIEnabled = false	
+	elseif command == 'cycleui' then
+		local numCategories = #m_categories
+		local oldIndex = m_categoryIndex
+		Printf("OldIndex: "..tostring(oldIndex))
+		m_categoryIndex = m_categoryIndex + 1
+		if m_categoryIndex > numCategories then
+			m_categoryIndex = 1
+		end
+		Printf("NewIndex: "..tostring(m_categoryIndex))
+		UpdateHUD()
 	elseif command == "toggledebug" then
 		if DEBUG then
 			DEBUG = false
@@ -420,9 +464,9 @@ function OnCommandRecieved(command, ...)
 		end
 	elseif command == 'testing' then
 		-- Output results which will end up on a UI somewhere.
-		for k, v in pairs(CurrencyResults) do
-			Printf("K: "..tostring(k)..", Value: "..tostring(v))
-		end
+		--for k, v in pairs(CurrencyResults) do
+		--	Printf("K: "..tostring(k)..", Value: "..tostring(v))
+		--end
 	elseif command == 'help' then
 		OutputHelp()
 	elseif command == "refresh" then
@@ -436,11 +480,13 @@ end
 
 function UpdateTableValues(packet)
 	-- If a value is not updating correctly, chances are it's not an eact match to packets/fields.lua'
-	for k, v in pairs(CurrencyResults) do
-		local Value = comma_value(packet[k])
-		if Value ~= nil then
-			--Printf("Key: "..tostring(k)..", Value: "..tostring(Value))			
-			CurrencyResults[k] = Value
+	for currencyCategoryKey, currencyCategoryTable in pairs(CurrencyResultsCategorised) do
+		for k, v in pairs(currencyCategoryTable) do
+			local Value = comma_value(packet[k])
+			if Value ~= nil then
+				--Printf("Key: "..tostring(k)..", Value: "..tostring(Value))			
+				CurrencyResultsCategorised[currencyCategoryKey][k] = Value
+			end
 		end
 	end
 
@@ -465,10 +511,15 @@ function RefreshValues()
 
 					-- Determine whether this currency actually exists in game
 					-- Compared to our search criteria.
-					for k, v in pairs(CurrencyResults) do
-						--Printf("Compare: "..tostring(str).. " vs "..tostring(k))
-						if str:find(k) then
-							bInject = true
+					
+					for currencyCategoryKey, currencyCategoryTable in pairs(CurrencyResultsCategorised) do
+						for k, v in pairs(currencyCategoryTable) do
+							if str:find(k) then
+								bInject = true
+								break
+							end
+						end
+						if bInject then
 							break
 						end
 					end
@@ -484,7 +535,7 @@ function RefreshValues()
 			    packets.inject(packet)
                 results = true
 			else 
-				--Printf("NOT Injecting")
+				Printf("NOT Injecting - Failed to find field in currency results table.")
             end
         end
         return results
@@ -496,19 +547,50 @@ end
 function UpdateHUD()
 	-- Push values to HUD accordingly.
 
-	if CurrencyResults == nil then
+	if CurrencyResultsCategorised == nil then
 		return
 	end
 
+	local currentCategory = m_categories[m_categoryIndex]
+	if currentCategory == nil then
+		return
+	end
+
+	-- Prefix Bar with the current category.
+	local categoryTypeText = CurrencyResultsCategorised[currentCategory]
+	if categoryTypeText == nil then
+		return
+	end
+
+	-- NOTE: Be nice if I could use the table index as a string, but can't find a way to make that possible in lua.
+	if categoryTypeText.Name == nil then
+		return
+	end
+
+	local bInjectAll = string.find(categoryTypeText.Name, "All") or nil
 	local combinedText = {}
-	for k, v in pairs(CurrencyResults) do
-		local injectedText = ''..m_headingCol..tostring(k)..m_preCol..': '..tostring(v)..' '
-		table.insert(combinedText, injectedText)				
+	table.insert(combinedText, categoryTypeText.Name..': ')
+
+	-- NOTE: does lua support continue ?
+	for currencyCategoryKey, currencyCategoryTable in pairs(CurrencyResultsCategorised) do
+
+		local localCategoryName = CurrencyResultsCategorised[currencyCategoryKey].Name
+		local bCategoryMatches = (localCategoryName == categoryTypeText.Name) or nil
+		if bInjectAll == 1 or bCategoryMatches == true then
+			for k, v in pairs(currencyCategoryTable) do
+				-- Ignore Name case.
+				if tostring(k) ~= "Name" then
+					-- Only inject if the category matches or it's set to ALL			
+					local injectedText = ''..m_headingCol..tostring(k)..m_preCol..': '..tostring(v)..' '
+					table.insert(combinedText, injectedText)
+				end
+			end
+		end
 	end
 
 	local Result = table.concat(combinedText)
 
-	box:text("CWBar "..tostring(Result))
+	box:text(tostring(Result))
 
 	if m_bUIEnabled then
 		box:show()
@@ -559,8 +641,35 @@ function OutputHelp()
 		'   //cw hide - Makes the bar invisible\n',
 		'   //cw refresh - Forces a UI Update\n',
 		'   //cw toggledebug - Will output packet info to help identify if all cases are accounted for. Bottom Left goes red in debug mode.\n',
+		'   //cw cycleui - this will filter the bar to only show relevant currency information relating to that category.'
 		'   //cw help - Brings this menu back.\n',
 	}
 	local HelpText = concat_strings(HelpTable)
 	Printf(HelpText)
 end
+
+--Copyright © 2024, Lordmatics
+--All rights reserved.
+
+--Redistribution and use in source and binary forms, with or without
+--modification, are permitted provided that the following conditions are met:
+
+--    * Redistributions of source code must retain the above copyright
+--      notice, this list of conditions and the following disclaimer.
+--    * Redistributions in binary form must reproduce the above copyright
+--      notice, this list of conditions and the following disclaimer in the
+--      documentation and/or other materials provided with the distribution.
+--    * Neither the name of <addon name> nor the
+--      names of its contributors may be used to endorse or promote products
+--      derived from this software without specific prior written permission.
+
+--THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+--ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+--WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+--DISCLAIMED. IN NO EVENT SHALL <your name> BE LIABLE FOR ANY
+--DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+--(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+--LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+--ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+--(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+--SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
