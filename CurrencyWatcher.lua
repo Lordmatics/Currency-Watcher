@@ -98,6 +98,11 @@ local packetDataToIgnore = T{
 	50, -- Linkshell NPC Interaction
 	224, -- Linkshell Equip
 	211, -- Lot Drop Item
+	221, -- Party Member Update
+	23, -- Incoming Chat
+	54, -- NPC Chat
+	68, -- Job Info Extra
+	200, -- Party Struct Update
 }
 
 local packetsToRefreshUI = T{
@@ -109,6 +114,7 @@ local packetsToRefreshUI = T{
 	-- 50, -- NPC Interaction - occurs before menu and some cutscenes
 	79, -- Downloading Data 2 - Tested for Bead Pouch.
 	-- I think 79 for Data Download 2 might be relevant
+	117, -- Unity Start and coincidentally, end.
 }
 
 -- Ensure these structures are in sync.
