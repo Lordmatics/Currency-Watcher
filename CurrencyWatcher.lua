@@ -422,6 +422,7 @@ end
 
 function OnLoaded()
 	-- Initialise values.
+	box:color(255,255,255)
 	RefreshValues()
 end
 
@@ -443,12 +444,18 @@ function OnCommandRecieved(command, ...)
 	elseif command == 'cycleui' then
 		local numCategories = #m_categories
 		local oldIndex = m_categoryIndex
-		Printf("OldIndex: "..tostring(oldIndex))
+		if DEBUG then
+			local categoryToString = m_categories[oldIndex]
+			Printf("OldIndex: "..tostring(oldIndex)..' ['..tostring(CurrencyResultsCategorised[categoryToString].Name)..']')
+		end
 		m_categoryIndex = m_categoryIndex + 1
 		if m_categoryIndex > numCategories then
 			m_categoryIndex = 1
 		end
-		Printf("NewIndex: "..tostring(m_categoryIndex))
+		if DEBUG then
+			local categoryToString = m_categories[m_categoryIndex]
+			Printf("NewIndex: "..tostring(m_categoryIndex)..' ['..tostring(CurrencyResultsCategorised[categoryToString].Name)..']')
+		end
 		UpdateHUD()
 	elseif command == "toggledebug" then
 		if DEBUG then
