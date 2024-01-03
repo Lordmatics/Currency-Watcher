@@ -44,9 +44,11 @@ defaults.display.text.green = 255
 defaults.display.text.blue = 255
 defaults.display.text.alpha = 255
 defaults.display.text.size = 12
+defaults.category_index = 7
 
 settings = T{}
 settings = config.load('data\\settings.xml', defaults)
+config.save(settings, 'global')
 
 box = texts.new(settings)
 
@@ -110,7 +112,7 @@ local packetsToRefreshUI = T{
 }
 
 -- Ensure these structures are in sync.
-m_categoryIndex = 7 -- "All"
+m_categoryIndex = settings.category_index -- "All"
 m_categories =
 T{
 	"Mythic", -- 1
@@ -456,6 +458,9 @@ function OnCommandRecieved(command, ...)
 			local categoryToString = m_categories[m_categoryIndex]
 			Printf("NewIndex: "..tostring(m_categoryIndex)..' ['..tostring(CurrencyResultsCategorised[categoryToString].Name)..']')
 		end
+
+		settings.category_index = m_categoryIndex
+		config.save(settings, 'global')
 		UpdateHUD()
 	elseif command == "toggledebug" then
 		if DEBUG then
