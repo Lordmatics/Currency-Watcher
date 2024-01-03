@@ -103,6 +103,15 @@ local packetDataToIgnore = T{
 	54, -- NPC Chat
 	68, -- Job Info Extra
 	200, -- Party Struct Update
+	141, -- Job Points
+	140, -- Merits
+	226, -- Char Info
+	173, -- MMM List
+	174, -- Mount List
+	65, -- Blacklist
+	202, -- Bazaar Message
+	85, -- Key Otem Log
+	113, -- Campaign Map Info
 }
 
 local packetsToRefreshUI = T{
